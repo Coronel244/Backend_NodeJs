@@ -1,10 +1,6 @@
-// src/services/paciente.service.ts
+import { pacienteRepository } from "../repositories/paciente.repository";
+import { tipoIdentificacionRepository } from "../repositories/tipo-identificacion.repository";
 import { AppDataSource } from "../config/data-source";
-import { Paciente } from "../entities/paciente.entity";
-import { TipoIdentificacion } from "../entities/tipo-identificacion.entity";
-
-const pacienteRepo = AppDataSource.getRepository(Paciente);
-const tipoRepo = AppDataSource.getRepository(TipoIdentificacion);
 
 export const pacienteService = {
 
@@ -20,64 +16,124 @@ export const pacienteService = {
       email
     } = body;
 
-    //  Validaciones básicas
+    // VALIDACIONES
     if (!codigo_tipo_identificacion || !numero_identificacion || !primer_nombre || !primer_apellido || !email) {
       throw { code: 400, message: "Campos obligatorios faltantes" };
     }
 
-    //  Validar email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw { code: 400, message: "Email inválido" };
+    // NORMALIZACION DE DATOS
+    const numeroIdentificacionClean = numero_identificacion.trim();
+    const primerNombreClean = primer_nombre.trim().toUpperCase();
+    const segundoNombreClean = segundo_nombre?.trim().toUpperCase();
+    const primerApellidoClean = primer_apellido.trim().toUpperCase();
+    const segundoApellidoClean = segundo_apellido?.trim().toUpperCase();
+    const emailClean = email.trim().toLowerCase();
+    const codigoTipoClean = codigo_tipo_identificacion.trim().toUpperCase();
+
+    if (!codigoTipoClean || !numeroIdentificacionClean || !primerNombreClean || !primerApellidoClean || !emailClean) {
+      throw { code: 400, message: "Campos obligatorios faltantes" };
     }
 
-    // Validar tipo identificación
-    const tipo = await tipoRepo.findOne({
+    // VALIDAR SOLO LETRAS EN NOMBRES
+    const soloLetras = /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s]+$/;
+
+    if (!soloLetras.test(primerNombreClean)) {
+      throw { code: 400, message: "Primer nombre no puede contener numeros" };
+    }
+
+    if (segundoNombreClean && !soloLetras.test(segundoNombreClean)) {
+      throw { code: 400, message: "Segundo nombre invalido" };
+    }
+
+    if (!soloLetras.test(primerApellidoClean)) {
+      throw { code: 400, message: "Primer apellido no puede contener numeros" };
+    }
+
+    if (segundoApellidoClean && !soloLetras.test(segundoApellidoClean)) {
+      throw { code: 400, message: "Segundo apellido invalido" };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailClean)) {
+      throw { code: 400, message: "Email invalido" };
+    }
+
+    const soloNumeros = /^\d+$/;
+    if (!soloNumeros.test(numeroIdentificacionClean)) {
+      throw { code: 400, message: "Numero de identificacion invalido" };
+    }
+
+    // VALIDAR DUPLICADO
+    const existe = await pacienteRepository.findOne({
+      where: { numeroIdentificacion: numeroIdentificacionClean }
+    });
+
+    if (existe) {
+      throw { code: 400, message: "El numero de identificacion ya existe" };
+    }
+
+    // VALIDAR TIPO IDENTIFICACION
+    const tipo = await tipoIdentificacionRepository.findOne({
       where: {
-        codigoTipoIdentificacion: codigo_tipo_identificacion,
+        codigoTipoIdentificacion: codigoTipoClean,
         estado: "A"
       }
     });
 
     if (!tipo) {
-      throw { code: 400, message: "Tipo de identificación inválido o inactivo" };
+      throw { code: 400, message: "Tipo de identificacion invalido o inactivo" };
     }
 
-    // Obtener secuencia Oracle
+    // SECUENCIA ORACLE
     const result = await AppDataSource.query(
-      `SELECT MGM_SEQ_PACIENT.NEXTVAL as id FROM dual`
+      `SELECT MGM_SEQ_PACIENT.NEXTVAL as ID FROM dual`
     );
 
     const idPaciente = result[0].ID;
 
-    //  Construir nombre completo
+    // NOMBRE COMPLETO
     const nombreCompleto = [
-      primer_nombre,
-      segundo_nombre,
-      primer_apellido,
-      segundo_apellido
+      primerNombreClean,
+      segundoNombreClean,
+      primerApellidoClean,
+      segundoApellidoClean
     ].filter(Boolean).join(" ");
 
-    // Crear objeto
-    const paciente = pacienteRepo.create({
+    // CREAR ENTIDAD
+    const paciente = pacienteRepository.create({
       idPaciente,
-      numeroIdentificacion: numero_identificacion,
-      primerNombre: primer_nombre,
-      segundoNombre: segundo_nombre,
-      primerApellido: primer_apellido,
-      segundoApellido: segundo_apellido,
+      numeroIdentificacion: numeroIdentificacionClean,
+      primerNombre: primerNombreClean,
+      segundoNombre: segundoNombreClean,
+      primerApellido: primerApellidoClean,
+      segundoApellido: segundoApellidoClean,
       nombreCompleto,
-      email,
+      email: emailClean,
       estado: "A",
       fechaIngreso: new Date(),
       usuarioIngreso: usuario,
       tipoIdentificacion: tipo
     });
 
-    //  Guardar
-    await pacienteRepo.save(paciente);
+    await pacienteRepository.save(paciente);
 
-    return paciente;
+    // DTO DE RESPUESTA
+    return {
+      id_paciente: paciente.idPaciente,
+      numero_identificacion: paciente.numeroIdentificacion,
+      primer_nombre: paciente.primerNombre,
+      segundo_nombre: paciente.segundoNombre,
+      primer_apellido: paciente.primerApellido,
+      segundo_apellido: paciente.segundoApellido,
+      nombre_completo: paciente.nombreCompleto,
+      email: paciente.email,
+      estado: paciente.estado,
+      fecha_ingreso: paciente.fechaIngreso,
+      usuario_ingreso: paciente.usuarioIngreso,
+      tipo_identificacion: {
+        codigo_tipo_identificacion: tipo.codigoTipoIdentificacion,
+        nombre_tipo_identificacion: tipo.nombreTipoIdentificacion
+      }
+    };
   }
-
 };

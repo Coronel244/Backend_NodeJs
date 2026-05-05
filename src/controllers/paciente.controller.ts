@@ -1,10 +1,10 @@
-// src/controllers/paciente.controller.ts
 import { Request, Response } from "express";
 import { pacienteService } from "../services/paciente.service";
 
 export const crearPaciente = async (req: Request, res: Response) => {
   try {
-    const usuario = (req as any).user.username;
+
+    const usuario = (req as any).user?.username || (req as any).user;
 
     const data = await pacienteService.crearPaciente(req.body, usuario);
 
@@ -15,18 +15,15 @@ export const crearPaciente = async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-  if (error.code === "ORA-00001") {
-    return res.status(400).json({
-      code: 400,
-      message: "El número de identificación ya existe",
+
+    console.log("ERROR REAL:", error);
+
+
+    const status = typeof error.code === "number" ? error.code : 500;
+    return res.status(error.code || 500).json({
+      code: status,
+      message: error.message || "Error interno del servidor",
       data: null
     });
   }
-
-  return res.status(500).json({
-    code: 500,
-    message: "Error interno del servidor",
-    data: null
-  });
-}
 };
