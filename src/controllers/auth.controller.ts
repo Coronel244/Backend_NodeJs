@@ -19,7 +19,7 @@ export const login = (req: Request, res: Response) => {
       data: null
     });
   }
-
+console.log("LOGIN SECRET:", process.env.JWT_SECRET);
   const base64Credentials = authHeader.split(" ")[1];
   const credentials = Buffer.from(base64Credentials, "base64").toString("utf-8");
 

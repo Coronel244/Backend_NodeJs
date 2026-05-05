@@ -1,49 +1,49 @@
-import {Entity, PrimaryColumn, Column, ManyToOne, JoinColumn,} from "typeorm";
+import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from "typeorm";
 import { TipoIdentificacion } from "./tipo-identificacion.entity";
 
-@Entity("mgm_pacientes")
+@Entity({ name: "MGM_PACIENTES" })
 export class Paciente {
 
-  @PrimaryColumn({ name: "id_paciente", type: "number" })
+  @PrimaryColumn({ name: "ID_PACIENTE" })
   idPaciente!: number;
 
-  @Column({ name: "numero_identificacion", type: "varchar2", length: 20 })
+  @Column({ name: "NUMERO_IDENTIFICACION" })
   numeroIdentificacion!: string;
 
-  @Column({ name: "primer_nombre", type: "varchar2", length: 50 })
+  @Column({ name: "PRIMER_NOMBRE" })
   primerNombre!: string;
 
-  @Column({ name: "segundo_nombre", type: "varchar2", length: 50, nullable: true })
+  @Column({ name: "SEGUNDO_NOMBRE", nullable: true })
   segundoNombre?: string;
 
-  @Column({ name: "primer_apellido", type: "varchar2", length: 50 })
+  @Column({ name: "PRIMER_APELLIDO" })
   primerApellido!: string;
 
-  @Column({ name: "segundo_apellido", type: "varchar2", length: 50, nullable: true })
+  @Column({ name: "SEGUNDO_APELLIDO", nullable: true })
   segundoApellido?: string;
 
-  @Column({ name: "nombre_completo", type: "varchar2", length: 150 })
+  @Column({ name: "NOMBRE_COMPLETO" })
   nombreCompleto!: string;
 
-  @Column({ name: "email", type: "varchar2", length: 100 })
+  @Column({ name: "EMAIL" })
   email!: string;
 
-  @Column({ name: "estado", type: "char", length: 1, default: "A" })
+  @Column({ name: "ESTADO", default: "A" })
   estado!: string;
 
-  @Column({ name: "fecha_ingreso", type: "timestamp", nullable: true })
+  @Column({ name: "FECHA_INGRESO", nullable: true })
   fechaIngreso!: Date;
 
-  @Column({ name: "usuario_ingreso", type: "varchar2", length: 50, nullable: true })
+  @Column({ name: "USUARIO_INGRESO", nullable: true })
   usuarioIngreso!: string;
 
-  @Column({ name: "fecha_modificacion", type: "timestamp", nullable: true })
+  @Column({ name: "FECHA_MODIFICACION", nullable: true })
   fechaModificacion!: Date;
 
-  @Column({ name: "usuario_modificacion", type: "varchar2", length: 50, nullable: true })
+  @Column({ name: "USUARIO_MODIFICACION", nullable: true })
   usuarioModificacion!: string;
 
   @ManyToOne(() => TipoIdentificacion, (tipo) => tipo.pacientes)
-  @JoinColumn({ name: "codigo_tipo_identificacion" })
+  @JoinColumn({ name: "CODIGO_TIPO_IDENTIFICACION" })
   tipoIdentificacion!: TipoIdentificacion;
 }

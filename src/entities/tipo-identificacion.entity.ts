@@ -1,18 +1,19 @@
 import { Entity, PrimaryColumn, Column, OneToMany } from "typeorm";
 import { Paciente } from "./paciente.entity";
 
-@Entity("daf_tipos_identificacion")
+//@Entity("daf_tipos_identificacion")
+@Entity({ name: "DAF_TIPOS_IDENTIFICACION" })
 export class TipoIdentificacion {
 
-  @PrimaryColumn({ name: "codigo_tipo_identificacion", type: "varchar2", length: 10 })
+ @PrimaryColumn({ name: "CODIGO_TIPO_IDENTIFICACION" })
   codigoTipoIdentificacion!: string;
 
-  @Column({ name: "nombre_tipo_identificacion", type: "varchar2", length: 50 })
+  @Column({ name: "NOMBRE_TIPO_IDENTIFICACION" })
   nombreTipoIdentificacion!: string;
 
-  @Column({ name: "estado", type: "char", length: 1, default: "A" })
+  @Column({ name: "ESTADO" })
   estado!: string;
-
+  
   @OneToMany(() => Paciente, (paciente) => paciente.tipoIdentificacion)
   pacientes!: Paciente[];
 }

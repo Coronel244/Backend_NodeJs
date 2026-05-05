@@ -7,7 +7,7 @@ const SECRET = process.env.JWT_SECRET!;
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-
+console.log("MIDDLEWARE SECRET:", process.env.JWT_SECRET);
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({
       code: 401,
