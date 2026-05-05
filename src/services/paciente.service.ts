@@ -6,6 +6,7 @@ import { AppDataSource } from "../config/data-source";
 
 export const pacienteService = {
 
+  //post de pacientes -----------------------
   async crearPaciente(
     body: CreatePacienteDto,
     usuario: string
@@ -117,5 +118,52 @@ export const pacienteService = {
         nombre_tipo_identificacion: tipo.nombreTipoIdentificacion
       }
     };
+  },
+
+
+//get de pacientes activos-----------------------
+
+async obtenerPorId(idPaciente: number) {
+
+  const paciente = await pacienteRepository
+    .createQueryBuilder("p")
+    .leftJoinAndSelect("p.tipoIdentificacion", "t")
+    .where("p.idPaciente = :id", { id: idPaciente })
+    .getOne();
+
+  if (!paciente) {
+    throw { code: 404, message: "Paciente no encontrado" };
   }
+
+  return {
+    id_paciente: paciente.idPaciente,
+    numero_identificacion: paciente.numeroIdentificacion,
+    primer_nombre: paciente.primerNombre,
+    segundo_nombre: paciente.segundoNombre,
+    primer_apellido: paciente.primerApellido,
+    segundo_apellido: paciente.segundoApellido,
+    nombre_completo: paciente.nombreCompleto,
+    email: paciente.email,
+    estado: paciente.estado,
+    fecha_ingreso: paciente.fechaIngreso,
+    usuario_ingreso: paciente.usuarioIngreso,
+    tipo_identificacion: {
+      codigo_tipo_identificacion: paciente.tipoIdentificacion.codigoTipoIdentificacion,
+      nombre_tipo_identificacion: paciente.tipoIdentificacion.nombreTipoIdentificacion
+    }
+  };
+},
+
+
+
+
+
+
+
+
+
+
+
+
+
 };

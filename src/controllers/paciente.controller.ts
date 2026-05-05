@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { pacienteService } from "../services/paciente.service";
 
+//post de pacientes -----------------------
 export const crearPaciente = async (req: Request, res: Response) => {
   try {
 
@@ -27,3 +28,35 @@ export const crearPaciente = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+// get de pacientes activos-----------------------
+
+export const obtenerPaciente = async (req: Request, res: Response) => {
+  try {
+
+    const id = Number(req.params.id);
+
+    const data = await pacienteService.obtenerPorId(id);
+
+    return res.status(200).json({
+      code: 200,
+      message: "Paciente encontrado",
+      data
+    });
+
+  } catch (error: any) {
+    return res.status(error.code || 500).json({
+      code: error.code || 500,
+      message: error.message || "Error interno",
+      data: null
+    });
+  }
+};
+
+
+
+
+
+
+
