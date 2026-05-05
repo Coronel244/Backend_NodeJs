@@ -1,6 +1,16 @@
 import { Request, Response } from "express";
 import { pacienteService } from "../services/paciente.service";
 
+const obtenerIdPaciente = (req: Request) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    throw { code: 400, message: "Id de paciente invalido" };
+  }
+
+  return id;
+};
+
 //post de pacientes -----------------------
 export const crearPaciente = async (req: Request, res: Response) => {
   try {
@@ -35,7 +45,7 @@ export const crearPaciente = async (req: Request, res: Response) => {
 export const obtenerPaciente = async (req: Request, res: Response) => {
   try {
 
-    const id = Number(req.params.id);
+    const id = obtenerIdPaciente(req);
 
     const data = await pacienteService.obtenerPorId(id);
 
@@ -62,7 +72,7 @@ export const actualizarPaciente = async (req: Request, res: Response) => {
   try {
 
     const usuario = (req as any).user.username;
-    const id = Number(req.params.id);
+    const id = obtenerIdPaciente(req);
 
     const data = await pacienteService.actualizarPaciente(id, req.body, usuario);
 
@@ -87,7 +97,7 @@ export const eliminarPaciente = async (req: Request, res: Response) => {
   try {
 
     const usuario = (req as any).user.username;
-    const id = Number(req.params.id);
+    const id = obtenerIdPaciente(req);
 
     const data = await pacienteService.eliminarPaciente(id, usuario);
 

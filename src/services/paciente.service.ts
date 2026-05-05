@@ -4,6 +4,11 @@ import { pacienteRepository } from "../repositories/paciente.repository";
 import { tipoIdentificacionRepository } from "../repositories/tipo-identificacion.repository";
 import { AppDataSource } from "../config/data-source";
 
+const soloLetras = /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s]+$/;
+const soloNumeros = /^\d+$/;
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const esTexto = (value: unknown): value is string => typeof value === "string";
+
 export const pacienteService = {
 
   //post de pacientes -----------------------
@@ -22,7 +27,24 @@ export const pacienteService = {
       email
     } = body;
 
-    // NORMALIZACIÓN
+    if (
+      !esTexto(codigo_tipo_identificacion) ||
+      !esTexto(numero_identificacion) ||
+      !esTexto(primer_nombre) ||
+      !esTexto(primer_apellido) ||
+      !esTexto(email)
+    ) {
+      throw { code: 400, message: "Campos obligatorios faltantes" };
+    }
+
+    if (
+      (segundo_nombre !== undefined && !esTexto(segundo_nombre)) ||
+      (segundo_apellido !== undefined && !esTexto(segundo_apellido))
+    ) {
+      throw { code: 400, message: "Campos opcionales invalidos" };
+    }
+
+    // Normalizacion
     const numero = numero_identificacion.trim();
     const primerNombre = primer_nombre.trim().toUpperCase();
     const segundoNombre = segundo_nombre?.trim().toUpperCase();
@@ -31,13 +53,25 @@ export const pacienteService = {
     const correo = email.trim().toLowerCase();
     const codigoTipo = codigo_tipo_identificacion.trim().toUpperCase();
 
-    // VALIDACIONES (igual que ya tienes)
-    const soloLetras = /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s]+$/;
-    const soloNumeros = /^\d+$/;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!codigoTipo || !numero || !primerNombre || !primerApellido || !correo) {
+      throw { code: 400, message: "Campos obligatorios faltantes" };
+    }
 
+    // Validaciones
     if (!soloLetras.test(primerNombre)) {
-      throw { code: 400, message: "Primer nombre no válido" };
+      throw { code: 400, message: "Primer nombre no valido" };
+    }
+
+    if (segundoNombre && !soloLetras.test(segundoNombre)) {
+      throw { code: 400, message: "Segundo nombre no valido" };
+    }
+
+    if (!soloLetras.test(primerApellido)) {
+      throw { code: 400, message: "Primer apellido no valido" };
+    }
+
+    if (segundoApellido && !soloLetras.test(segundoApellido)) {
+      throw { code: 400, message: "Segundo apellido no valido" };
     }
 
     if (!soloNumeros.test(numero)) {
@@ -100,7 +134,6 @@ export const pacienteService = {
 
     await pacienteRepository.save(paciente);
 
-    // DTO RESPONSE
     return {
       id_paciente: paciente.idPaciente,
       numero_identificacion: paciente.numeroIdentificacion,
@@ -120,127 +153,161 @@ export const pacienteService = {
     };
   },
 
+  // get de pacientes activos
+  async obtenerPorId(idPaciente: number): Promise<PacienteResponseDto> {
 
-//get de pacientes activos-----------------------
+    const paciente = await pacienteRepository
+      .createQueryBuilder("p")
+      .leftJoinAndSelect("p.tipoIdentificacion", "t")
+      .where("p.idPaciente = :id", { id: idPaciente })
+      .andWhere("p.estado = :estado", { estado: "A" })
+      .getOne();
 
-async obtenerPorId(idPaciente: number) {
-
-  const paciente = await pacienteRepository
-    .createQueryBuilder("p")
-    .leftJoinAndSelect("p.tipoIdentificacion", "t")
-    .where("p.idPaciente = :id", { id: idPaciente })
-    .getOne();
-
-  if (!paciente) {
-    throw { code: 404, message: "Paciente no encontrado" };
-  }
-
-  return {
-    id_paciente: paciente.idPaciente,
-    numero_identificacion: paciente.numeroIdentificacion,
-    primer_nombre: paciente.primerNombre,
-    segundo_nombre: paciente.segundoNombre,
-    primer_apellido: paciente.primerApellido,
-    segundo_apellido: paciente.segundoApellido,
-    nombre_completo: paciente.nombreCompleto,
-    email: paciente.email,
-    estado: paciente.estado,
-    fecha_ingreso: paciente.fechaIngreso,
-    usuario_ingreso: paciente.usuarioIngreso,
-    tipo_identificacion: {
-      codigo_tipo_identificacion: paciente.tipoIdentificacion.codigoTipoIdentificacion,
-      nombre_tipo_identificacion: paciente.tipoIdentificacion.nombreTipoIdentificacion
+    if (!paciente) {
+      throw { code: 404, message: "Paciente no encontrado" };
     }
-  };
-},
 
+    return {
+      id_paciente: paciente.idPaciente,
+      numero_identificacion: paciente.numeroIdentificacion,
+      primer_nombre: paciente.primerNombre,
+      segundo_nombre: paciente.segundoNombre,
+      primer_apellido: paciente.primerApellido,
+      segundo_apellido: paciente.segundoApellido,
+      nombre_completo: paciente.nombreCompleto,
+      email: paciente.email,
+      estado: paciente.estado,
+      fecha_ingreso: paciente.fechaIngreso,
+      usuario_ingreso: paciente.usuarioIngreso,
+      tipo_identificacion: {
+        codigo_tipo_identificacion: paciente.tipoIdentificacion.codigoTipoIdentificacion,
+        nombre_tipo_identificacion: paciente.tipoIdentificacion.nombreTipoIdentificacion
+      }
+    };
+  },
 
+  // put de pacientes por id
+  async actualizarPaciente(id: number, body: any, usuario: string) {
 
+    const paciente = await pacienteRepository.findOne({
+      where: { idPaciente: id }
+    });
 
-// put de pacientes por id -----------------------
-async actualizarPaciente(id: number, body: any, usuario: string) {
-
-  const paciente = await pacienteRepository.findOne({
-    where: { idPaciente: id }
-  });
-
-  if (!paciente) {
-    throw { code: 404, message: "Paciente no encontrado" };
-  }
-
-  const {
-    primer_nombre,
-    segundo_nombre,
-    primer_apellido,
-    segundo_apellido,
-    email
-  } = body;
-
-  if (email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw { code: 400, message: "Email inválido" };
+    if (!paciente) {
+      throw { code: 404, message: "Paciente no encontrado" };
     }
-    paciente.email = email.trim().toLowerCase();
+
+    const {
+      primer_nombre,
+      segundo_nombre,
+      primer_apellido,
+      segundo_apellido,
+      email
+    } = body;
+
+    if (email !== undefined) {
+      if (!esTexto(email)) {
+        throw { code: 400, message: "Email invalido" };
+      }
+
+      const correo = email?.trim().toLowerCase();
+
+      if (!correo || !emailRegex.test(correo)) {
+        throw { code: 400, message: "Email invalido" };
+      }
+
+      paciente.email = correo;
+    }
+
+    if (primer_nombre !== undefined) {
+      if (!esTexto(primer_nombre)) {
+        throw { code: 400, message: "Primer nombre no valido" };
+      }
+
+      const primerNombre = primer_nombre?.trim().toUpperCase();
+
+      if (!primerNombre || !soloLetras.test(primerNombre)) {
+        throw { code: 400, message: "Primer nombre no valido" };
+      }
+
+      paciente.primerNombre = primerNombre;
+    }
+
+    if (segundo_nombre !== undefined) {
+      if (!esTexto(segundo_nombre)) {
+        throw { code: 400, message: "Segundo nombre no valido" };
+      }
+
+      const segundoNombre = segundo_nombre?.trim().toUpperCase();
+
+      if (segundoNombre && !soloLetras.test(segundoNombre)) {
+        throw { code: 400, message: "Segundo nombre no valido" };
+      }
+
+      paciente.segundoNombre = segundoNombre;
+    }
+
+    if (primer_apellido !== undefined) {
+      if (!esTexto(primer_apellido)) {
+        throw { code: 400, message: "Primer apellido no valido" };
+      }
+
+      const primerApellido = primer_apellido?.trim().toUpperCase();
+
+      if (!primerApellido || !soloLetras.test(primerApellido)) {
+        throw { code: 400, message: "Primer apellido no valido" };
+      }
+
+      paciente.primerApellido = primerApellido;
+    }
+
+    if (segundo_apellido !== undefined) {
+      if (!esTexto(segundo_apellido)) {
+        throw { code: 400, message: "Segundo apellido no valido" };
+      }
+
+      const segundoApellido = segundo_apellido?.trim().toUpperCase();
+
+      if (segundoApellido && !soloLetras.test(segundoApellido)) {
+        throw { code: 400, message: "Segundo apellido no valido" };
+      }
+
+      paciente.segundoApellido = segundoApellido;
+    }
+
+    // Reconstruir nombre completo
+    paciente.nombreCompleto = [
+      paciente.primerNombre,
+      paciente.segundoNombre,
+      paciente.primerApellido,
+      paciente.segundoApellido
+    ].filter(Boolean).join(" ");
+
+    paciente.usuarioModificacion = usuario;
+    paciente.fechaModificacion = new Date();
+
+    await pacienteRepository.save(paciente);
+
+    return { id_paciente: paciente.idPaciente };
+  },
+
+  // delete de pacientes por id
+  async eliminarPaciente(id: number, usuario: string) {
+
+    const paciente = await pacienteRepository.findOne({
+      where: { idPaciente: id }
+    });
+
+    if (!paciente) {
+      throw { code: 404, message: "Paciente no encontrado" };
+    }
+
+    paciente.estado = "I";
+    paciente.usuarioModificacion = usuario;
+    paciente.fechaModificacion = new Date();
+
+    await pacienteRepository.save(paciente);
+
+    return { id_paciente: paciente.idPaciente };
   }
-
-  if (primer_nombre) paciente.primerNombre = primer_nombre.trim().toUpperCase();
-  if (segundo_nombre !== undefined) paciente.segundoNombre = segundo_nombre?.trim().toUpperCase();
-  if (primer_apellido) paciente.primerApellido = primer_apellido.trim().toUpperCase();
-  if (segundo_apellido !== undefined) paciente.segundoApellido = segundo_apellido?.trim().toUpperCase();
-
-  // reconstruir nombre completo
-  paciente.nombreCompleto = [
-    paciente.primerNombre,
-    paciente.segundoNombre,
-    paciente.primerApellido,
-    paciente.segundoApellido
-  ].filter(Boolean).join(" ");
-
-  paciente.usuarioModificacion = usuario;
-  paciente.fechaModificacion = new Date();
-
-  await pacienteRepository.save(paciente);
-
-  return { id_paciente: paciente.idPaciente };
-},
-
-
-
-// delete de pacientes por id -----------------------
-
-async eliminarPaciente(id: number, usuario: string) {
-
-  const paciente = await pacienteRepository.findOne({
-    where: { idPaciente: id }
-  });
-
-  if (!paciente) {
-    throw { code: 404, message: "Paciente no encontrado" };
-  }
-
-  paciente.estado = "I";
-  paciente.usuarioModificacion = usuario;
-  paciente.fechaModificacion = new Date();
-
-  await pacienteRepository.save(paciente);
-
-  return { id_paciente: paciente.idPaciente };
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 };
