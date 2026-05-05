@@ -27,7 +27,7 @@ export const crearPaciente = async (req: Request, res: Response) => {
 
   } catch (error: any) {
 
-    console.log("ERROR REAL:", error);
+    
 
 
     const status = typeof error.code === "number" ? error.code : 500;
