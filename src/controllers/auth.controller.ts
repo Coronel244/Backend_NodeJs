@@ -1,9 +1,13 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 
-const USER = "VERIS";
-const PASSWORD = "PRUEBAS123";
-const SECRET = "super_secret_key"; // luego pásalo a .env
+import dotenv from "dotenv";
+dotenv.config();
+
+const USER = process.env.AUTH_USER;
+const PASSWORD = process.env.AUTH_PASSWORD;
+const SECRET = process.env.JWT_SECRET!;
+const EXPIRES = process.env.JWT_EXPIRES || "1h";
 
 export const login = (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
@@ -32,7 +36,7 @@ export const login = (req: Request, res: Response) => {
   const token = jwt.sign(
     { sub: username },
     SECRET,
-    { expiresIn: "1h" }
+    { expiresIn: EXPIRES } as SignOptions
   );
 
   return res.status(200).json({
