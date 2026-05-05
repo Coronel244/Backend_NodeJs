@@ -3,11 +3,15 @@ import { PacienteResponseDto } from "../dtos/paciente-response.dto";
 import { pacienteRepository } from "../repositories/paciente.repository";
 import { tipoIdentificacionRepository } from "../repositories/tipo-identificacion.repository";
 import { AppDataSource } from "../config/data-source";
+import { Paciente } from "../entities/paciente.entity";
 
 const soloLetras = /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s]+$/;
 const soloNumeros = /^\d+$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const esTexto = (value: unknown): value is string => typeof value === "string";
+
+const repo = AppDataSource.getRepository(Paciente);
+
 
 export const pacienteService = {
 
@@ -309,5 +313,69 @@ export const pacienteService = {
     await pacienteRepository.save(paciente);
 
     return { id_paciente: paciente.idPaciente };
+  },
+
+// get de pacientes dinamico por filtros -----------------------
+async listar(query: any) {
+
+  const {
+    numero_identificacion,
+    nombre_completo,
+    email,
+    estado,
+    page = 1,
+    size = 10
+  } = query;
+
+  const qb = repo
+    .createQueryBuilder("p")
+    .leftJoinAndSelect("p.tipoIdentificacion", "t");
+
+  // número de identificación (LIKE)
+  if (numero_identificacion?.trim()) {
+    qb.andWhere("p.numeroIdentificacion LIKE :numero", {
+      numero: `%${numero_identificacion.trim()}%`
+    });
   }
+
+  //  email (LIKE)
+  if (email?.trim()) {
+    qb.andWhere("LOWER(p.email) LIKE :email", {
+      email: `%${email.trim().toLowerCase()}%`
+    });
+  }
+
+  //  nombre completo (LIKE)
+  if (nombre_completo?.trim()) {
+    qb.andWhere("LOWER(p.nombreCompleto) LIKE :nombre", {
+      nombre: `%${nombre_completo.trim().toLowerCase()}%`
+    });
+  }
+
+  //  por defecto SIEMPRE "A"
+  const estadoFiltro = estado?.trim() ? estado : "A";
+
+  qb.andWhere("p.estado = :estado", {
+    estado: estadoFiltro
+  });
+
+  //  PAGINACIÓN
+  const take = Number(size);
+  const skip = (Number(page) - 1) * take;
+
+  qb.skip(skip).take(take);
+
+  //  EJECUCIÓN
+  const [data, total] = await qb.getManyAndCount();
+
+  return {
+    total_registros: total,
+    pagina_actual: Number(page),
+    tamanio_pagina: take,
+    total_paginas: Math.ceil(total / take),
+    resultados: data
+  };
+}
+
+
 };

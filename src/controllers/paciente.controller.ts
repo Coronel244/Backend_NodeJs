@@ -118,6 +118,24 @@ export const eliminarPaciente = async (req: Request, res: Response) => {
 
 
 
+// Get de pacientes por criterios
+export const listarPacientes = async (req: Request, res: Response) => {
+  try {
+    const data = await pacienteService.listar(req.query);
 
+    return res.json({
+      code: 200,
+      message: "Listado de pacientes",
+      data
+    });
+
+  } catch (error: any) {
+    return res.status(error.code || 500).json({
+      code: error.code || 500,
+      message: error.message || "Error interno",
+      data: null
+    });
+  }
+};
 
 
