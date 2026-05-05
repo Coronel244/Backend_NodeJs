@@ -207,6 +207,30 @@ async actualizarPaciente(id: number, body: any, usuario: string) {
 
 
 
+// delete de pacientes por id -----------------------
+
+async eliminarPaciente(id: number, usuario: string) {
+
+  const paciente = await pacienteRepository.findOne({
+    where: { idPaciente: id }
+  });
+
+  if (!paciente) {
+    throw { code: 404, message: "Paciente no encontrado" };
+  }
+
+  paciente.estado = "I";
+  paciente.usuarioModificacion = usuario;
+  paciente.fechaModificacion = new Date();
+
+  await pacienteRepository.save(paciente);
+
+  return { id_paciente: paciente.idPaciente };
+}
+
+
+
+
 
 
 

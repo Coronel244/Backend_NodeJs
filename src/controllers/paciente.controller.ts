@@ -82,6 +82,32 @@ export const actualizarPaciente = async (req: Request, res: Response) => {
 };
 
 
+// delete de pacientes por id -----------------------
+export const eliminarPaciente = async (req: Request, res: Response) => {
+  try {
+
+    const usuario = (req as any).user.username;
+    const id = Number(req.params.id);
+
+    const data = await pacienteService.eliminarPaciente(id, usuario);
+
+    return res.status(200).json({
+      code: 200,
+      message: "Paciente desactivado",
+      data
+    });
+
+  } catch (error: any) {
+    return res.status(error.code || 500).json({
+      code: error.code || 500,
+      message: error.message || "Error interno",
+      data: null
+    });
+  }
+};
+
+
+
 
 
 
