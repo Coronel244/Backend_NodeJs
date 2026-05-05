@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { login } from "../controllers/auth.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
-import {  crearPaciente, obtenerPaciente } from "../controllers/paciente.controller";
+import { actualizarPaciente, crearPaciente, obtenerPaciente } from "../controllers/paciente.controller";
 
 const router = Router();
 
@@ -17,5 +17,6 @@ router.get("/autenticacion/perfil", authMiddleware, (req, res) => {
 
 router.post("/pacientes", authMiddleware, crearPaciente);
 router.get("/pacientes/:id", authMiddleware, obtenerPaciente);
+router.put("/pacientes/:id", authMiddleware, actualizarPaciente);
 
 export default router;

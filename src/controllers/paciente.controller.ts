@@ -56,6 +56,31 @@ export const obtenerPaciente = async (req: Request, res: Response) => {
 
 
 
+// put de pacientes por id -----------------------
+
+export const actualizarPaciente = async (req: Request, res: Response) => {
+  try {
+
+    const usuario = (req as any).user.username;
+    const id = Number(req.params.id);
+
+    const data = await pacienteService.actualizarPaciente(id, req.body, usuario);
+
+    return res.status(200).json({
+      code: 200,
+      message: "Paciente actualizado",
+      data
+    });
+
+  } catch (error: any) {
+    return res.status(error.code || 500).json({
+      code: error.code || 500,
+      message: error.message || "Error interno",
+      data: null
+    });
+  }
+};
+
 
 
 

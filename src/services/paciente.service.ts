@@ -157,6 +157,59 @@ async obtenerPorId(idPaciente: number) {
 
 
 
+// put de pacientes por id -----------------------
+async actualizarPaciente(id: number, body: any, usuario: string) {
+
+  const paciente = await pacienteRepository.findOne({
+    where: { idPaciente: id }
+  });
+
+  if (!paciente) {
+    throw { code: 404, message: "Paciente no encontrado" };
+  }
+
+  const {
+    primer_nombre,
+    segundo_nombre,
+    primer_apellido,
+    segundo_apellido,
+    email
+  } = body;
+
+  if (email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw { code: 400, message: "Email inválido" };
+    }
+    paciente.email = email.trim().toLowerCase();
+  }
+
+  if (primer_nombre) paciente.primerNombre = primer_nombre.trim().toUpperCase();
+  if (segundo_nombre !== undefined) paciente.segundoNombre = segundo_nombre?.trim().toUpperCase();
+  if (primer_apellido) paciente.primerApellido = primer_apellido.trim().toUpperCase();
+  if (segundo_apellido !== undefined) paciente.segundoApellido = segundo_apellido?.trim().toUpperCase();
+
+  // reconstruir nombre completo
+  paciente.nombreCompleto = [
+    paciente.primerNombre,
+    paciente.segundoNombre,
+    paciente.primerApellido,
+    paciente.segundoApellido
+  ].filter(Boolean).join(" ");
+
+  paciente.usuarioModificacion = usuario;
+  paciente.fechaModificacion = new Date();
+
+  await pacienteRepository.save(paciente);
+
+  return { id_paciente: paciente.idPaciente };
+},
+
+
+
+
+
+
 
 
 
