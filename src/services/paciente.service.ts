@@ -157,14 +157,13 @@ export const pacienteService = {
     };
   },
 
-  // get de pacientes activos
+  // get de pacientes por id
   async obtenerPorId(idPaciente: number): Promise<PacienteResponseDto> {
 
     const paciente = await pacienteRepository
       .createQueryBuilder("p")
       .leftJoinAndSelect("p.tipoIdentificacion", "t")
       .where("p.idPaciente = :id", { id: idPaciente })
-      .andWhere("p.estado = :estado", { estado: "A" })
       .getOne();
 
     if (!paciente) {
@@ -352,12 +351,12 @@ async listar(query: any) {
     });
   }
 
-  //  por defecto SIEMPRE "A"
-  const estadoFiltro = estado?.trim() ? estado : "A";
-
-  qb.andWhere("p.estado = :estado", {
-    estado: estadoFiltro
-  });
+  // estado opcional: si no se envia, trae activos e inactivos
+  if (estado?.trim()) {
+    qb.andWhere("p.estado = :estado", {
+      estado: estado.trim().toUpperCase()
+    });
+  }
 
   //  PAGINACIÓN
   const take = Number(size);
